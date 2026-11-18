@@ -1,0 +1,11 @@
+# Cloudflare Workers static assets ignore list
+about
+about/**
+desktop.ini
+**/desktop.ini
+wrangler.jsonc
+.assetsignore
+.gitignore
+.wrangler
+.git
+.git/**

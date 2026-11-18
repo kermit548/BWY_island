@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW" data-theme="day">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>清大福青社｜你在福青社都學什麼？3D 溫暖玩具主題遊樂園</title>
+  <meta name="description" content="國立清華大學福智青年社（NTHU BWY）3D 互動學習主軸導覽：以福青希望熱氣球為核心，探索西式蔬食快餐館、中式蹭飯團飯館、陽光淨灘海灣、微縮植物園、情緒氣象屋、感恩卡傳郵局、天空之旅音樂台與生命領航摩天輪八大主題園區。" />
+  <!-- Google Tag Manager / Google Tag -->
+  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-N2KRPRRK"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+  </script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="./assets/island/island.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 頂部導覽與搜尋列 (HUD Header) -->
+  <header class="hud-header" role="banner">
+    <div class="hud-top-row">
+      <div class="brand-group">
+        <button type="button" id="btn-toggle-directory" class="icon-btn menu-map-btn" aria-expanded="true" aria-controls="directory-drawer" title="展開或收合樂園地圖目錄">
+          <span aria-hidden="true">☰</span>
+          <span class="menu-map-text">🗺️ 地圖</span>
+        </button>
+        <div class="brand-titles">
+          <h1 class="brand-heading">在福青社可以學什麼？</h1>
+          <p id="season-banner" class="brand-subtitle">成為帶給世界溫暖與希望的人 · 點擊 3D 樂園設施探索十大學習與跨校園區</p>
+        </div>
+      </div>
+
+      <div class="hud-toolbar-group" role="toolbar" aria-label="3D 樂園視角與互動工具">
+        <button type="button" id="btn-open-quiz" class="hud-btn hud-btn-accent hud-quiz-btn" title="30 秒測出最適合你的福青活動">
+          <span aria-hidden="true">🧭</span>
+          <span>適合我的活動</span>
+        </button>
+        <div class="hud-actions-scroll">
+          <button type="button" id="btn-reset-view" class="hud-btn" title="重置為全島鳥瞰視角">
+            <span aria-hidden="true">🗺️</span>
+            <span>全島鳥瞰</span>
+          </button>
+          <button type="button" id="btn-open-treasures" class="hud-btn" title="開啟 12 處福青溫暖彩蛋尋寶圖鑑">
+            <span aria-hidden="true">🎁</span>
+            <span id="treasure-counter-label">尋寶 (0/12)</span>
+          </button>
+          <button type="button" id="btn-mobile-more" class="hud-btn mobile-only" aria-haspopup="true" aria-expanded="false" aria-controls="hud-more-group" title="顯示更多設定與說明">
+            <span aria-hidden="true">⋯</span>
+            <span>更多</span>
+          </button>
+        </div>
+        <div id="hud-more-group" class="hud-more-group">
+          <button type="button" id="btn-cycle-time" class="hud-btn" title="切換晨曦、暖陽、黃昏、星光四時段光影">
+            <span id="time-icon" aria-hidden="true">☀️</span>
+            <span id="time-label">暖陽日</span>
+          </button>
+          <button type="button" id="btn-toggle-audio" class="hud-btn" aria-pressed="true" title="開關溫暖木琴互動音效">
+            <span id="audio-icon" aria-hidden="true">🔔</span>
+            <span class="btn-text-more">音效</span>
+          </button>
+          <button type="button" id="btn-open-about" class="hud-btn" title="關於清大福青社與四大願景">
+            <span aria-hidden="true">📖</span>
+            <span class="btn-text-more">四大願景</span>
+          </button>
+          <button type="button" id="btn-open-global-clubs" class="hud-btn" title="飛往遊艇碼頭並查看全球 61 所福智青年社一覽表">
+            <span aria-hidden="true">⛵</span>
+            <span>全球福青社 (61)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主畫布與 3D 標籤疊加層 (<main> 語意地標) -->
+  <main id="island-main" class="island-viewport">
+    <canvas id="island-canvas" aria-label="清大福青社 3D 溫暖玩具主題遊樂園互動場景"></canvas>
+    <div id="labels-layer" class="labels-layer" aria-live="polite"></div>
+
+    <!-- 底部簡易操作提示與小火車跟隨按鈕 -->
+    <div class="viewport-footer-bar">
+      <div class="control-hints">
+        <span>🖱️ 拖曳旋轉 · 滾輪縮放 · 點擊建築或彩蛋探索</span>
+      </div>
+      <div class="quick-tour-group">
+        <button type="button" id="btn-follow-train" class="mini-pill-btn" aria-pressed="false" title="搭乘福青希望小火車環島導覽">
+          🚂 搭乘遊園小火車
+        </button>
+        <button type="button" id="btn-random-zone" class="mini-pill-btn" title="隨機飛往一個主題學習園區">
+          🎲 隨機逛一區
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 左側園區快速導覽與無障礙文字目錄 (<aside>) -->
+  <aside id="directory-drawer" class="directory-drawer" aria-label="主題遊樂園八大園區快速導覽">
+    <div class="drawer-header">
+      <div>
+        <h2 class="drawer-title">🎡 樂園導覽地圖</h2>
+        <p class="drawer-desc">點擊任一園區即可飛往該微縮建築並查看歷年社課</p>
+      </div>
+      <button type="button" id="btn-close-directory" class="icon-btn mobile-only" title="關閉導覽目錄" aria-label="關閉導覽目錄">✕</button>
+    </div>
+    <search class="directory-filter-bar" aria-label="搜尋與主題篩選學習園區">
+      <div class="search-input-wrap">
+        <label for="zone-search-input" class="sr-only">搜尋社課、活動或關鍵字</label>
+        <input
+          type="search"
+          id="zone-search-input"
+          class="search-input"
+          placeholder="搜尋：蹭飯團、蔬食、卡片..."
+          autocomplete="off"
+        />
+      </div>
+      <div class="theme-filter-dropdown">
+        <button
+          type="button"
+          id="btn-theme-filter"
+          class="theme-filter-btn"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="theme-filter-popover"
+        >
+          <span id="theme-filter-label">主題篩選</span>
+          <span aria-hidden="true">▾</span>
+        </button>
+        <div
+          id="theme-filter-popover"
+          class="theme-filter-popover"
+          role="group"
+          aria-label="主題篩選複選選單"
+          hidden
+        ></div>
+      </div>
+    </search>
+    <div id="directory-list" class="directory-list" role="list"></div>
+    <div class="directory-footer">
+      <p class="club-routine-note">
+        <strong>📍 社課時間：</strong>每週三 18:30 共餐 · 19:00 社課<br />
+        <strong>🏠 常駐地點：</strong>清大蒙民偉樓（活中 207 / 水木）
+      </p>
+    </div>
+  </aside>
+
+  <!-- 右側／底部「你在福青社都學什麼？」詳情面板 (<aside>) -->
+  <aside id="detail-drawer" class="detail-drawer" aria-label="園區學習主軸與歷年社課詳情" aria-live="polite">
+    <div class="detail-topbar">
+      <div class="detail-nav-btns">
+        <button type="button" id="btn-prev-zone" class="nav-step-btn" title="上一個園區">◀ 上一區</button>
+        <button type="button" id="btn-next-zone" class="nav-step-btn" title="下一個園區">下一區 ▶</button>
+      </div>
+      <button type="button" id="btn-close-detail" class="icon-btn" title="收合詳情面板" aria-label="收合詳情面板">✕</button>
+    </div>
+
+    <div class="detail-scroll-body">
+      <div class="detail-badge-row">
+        <span id="detail-code" class="detail-code-tag">HUB</span>
+        <span id="detail-category" class="detail-category-tag">核心地標</span>
+      </div>
+      <h2 id="detail-title" class="detail-title">福青希望熱氣球主廣場</h2>
+      <p id="detail-metaphor" class="detail-metaphor">3D 場景：五色方格拼布熱氣球 × 藤編吊籃與五位揮手福青夥伴</p>
+
+      <!-- 核心亮點：當別人問你在福青社都學什麼？ -->
+      <section class="pitch-card" aria-labelledby="pitch-heading">
+        <div class="pitch-card-header">
+          <h3 id="pitch-heading" class="pitch-heading">💬 當朋友問「你在福青社都學什麼？」你可以這樣回答：</h3>
+          <button type="button" id="btn-copy-pitch" class="copy-chip-btn" title="複製這段介紹詞傳給朋友">複製回答</button>
+        </div>
+        <p id="detail-pitch" class="pitch-text"></p>
+      </section>
+
+      <!-- 動態專屬區塊：遊艇碼頭「全球福智青年社一覽表」或「天空之城蔬食浮島連動傳送門」 -->
+      <section id="detail-special-section" class="detail-section" hidden></section>
+
+      <!-- 學到的核心軟實力 -->
+      <section class="detail-section" aria-labelledby="skills-heading">
+        <h3 id="skills-heading" class="section-subtitle">🌱 在這區你會收穫的 4 大能力</h3>
+        <div id="detail-skills" class="skills-chip-grid"></div>
+      </section>
+
+      <!-- 為什麼我們在乎這件事 -->
+      <section class="detail-section" aria-labelledby="why-heading">
+        <h3 id="why-heading" class="section-subtitle">💡 為什麼我們一起學這個？</h3>
+        <p id="detail-why" class="detail-paragraph"></p>
+        <ul id="detail-highlights" class="highlights-list"></ul>
+      </section>
+
+      <!-- 清大福青歷年真實社課與公開相簿 (113-1 ~ 115-1) -->
+      <section class="detail-section" aria-labelledby="courses-heading">
+        <h3 id="courses-heading" class="section-subtitle">📸 清大福青歷年真實社課與活動相簿</h3>
+        <div id="detail-courses" class="courses-timeline"></div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- 彩蛋尋獲即時通知 Toast -->
+  <div id="toast-notification" class="toast-notification" role="status" aria-live="polite" hidden></div>
+
+  <!-- 原生 <dialog> 1：30 秒適性推薦測驗 -->
+  <dialog id="quiz-dialog" class="island-dialog" aria-labelledby="quiz-dialog-title">
+    <div class="dialog-inner">
+      <div class="dialog-header">
+        <div>
+          <span class="badge-pill badge-camp">30 秒互動指南</span>
+          <h2 id="quiz-dialog-title" class="dialog-title">🧭 我適合從哪個福青活動開始？</h2>
+        </div>
+        <button type="button" class="icon-btn btn-close-dialog" data-close-dialog="quiz-dialog" aria-label="關閉測驗視窗">✕</button>
+      </div>
+      <div id="quiz-body" class="dialog-body"></div>
+    </div>
+  </dialog>
+
+  <!-- 原生 <dialog> 2：12 處微縮彩蛋尋寶圖鑑 -->
+  <dialog id="treasure-dialog" class="island-dialog" aria-labelledby="treasure-dialog-title">
+    <div class="dialog-inner">
+      <div class="dialog-header">
+        <div>
+          <span class="badge-pill badge-live">溫暖微縮紀念品</span>
+          <h2 id="treasure-dialog-title" class="dialog-title">🎁 福青樂園 12 處尋寶圖鑑</h2>
+        </div>
+        <button type="button" class="icon-btn btn-close-dialog" data-close-dialog="treasure-dialog" aria-label="關閉尋寶圖鑑">✕</button>
+      </div>
+      <div class="dialog-body">
+        <p class="dialog-intro">
+          在 3D 樂園中直接點擊隱藏於各園區的特色物件（如綠蠵龜母子、屋頂漢堡、映心凍茶杯、清鏡門等），或點擊下方卡片的「飛往尋找」，即可收集 12 樣代表清大福青社記憶的溫暖彩蛋！
+        </p>
+        <div id="treasure-grid" class="treasure-grid"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 原生 <dialog> 3：關於清大福青社與四大願景 -->
+  <dialog id="about-dialog" class="island-dialog" aria-labelledby="about-dialog-title">
+    <div class="dialog-inner">
+      <div class="dialog-header">
+        <div>
+          <span class="badge-pill badge-camp">Since 1998 · 全球 53 所大學串聯</span>
+          <h2 id="about-dialog-title" class="dialog-title">📖 關於清大福智青年社（NTHU BWY）</h2>
+        </div>
+        <button type="button" class="icon-btn btn-close-dialog" data-close-dialog="about-dialog" aria-label="關閉關於視窗">✕</button>
+      </div>
+      <div class="dialog-body">
+        <blockquote class="vision-quote">
+          「在無限生命中，做追求心靈、福智圓滿的青年——成為帶給世界溫暖與希望的人。」
+        </blockquote>
+        <div id="visions-grid" class="visions-grid"></div>
+        <div class="about-info-box">
+          <h3>📅 如何參與我們？</h3>
+          <ul>
+            <li><strong>每週三溫馨社課：</strong>18:30–19:00 共進蔬食晚餐（蹭飯團），19:00–20:30 主題社課（地點：清大蒙民偉樓 207 或水木展演廳）。</li>
+            <li><strong>週末延伸充電：</strong>每週六《新竹福青學堂》（新竹市忠孝路 45 號 2 樓），結合跨校青年與各領域前輩交流。</li>
+            <li><strong>年度經典盛事：</strong>暑期四天三夜《大專青年生命成長營》、9 月教師節《卡片傳恩情》、11 月《特蔬任務蔬食月》、5 月《給媽媽的小情書》與南寮《手護海洋淨灘》。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 原生 <dialog> 4：遊艇碼頭「全球福智青年社一覽表」互動總覽 -->
+  <dialog id="global-clubs-dialog" class="island-dialog" aria-labelledby="global-clubs-dialog-title">
+    <div class="dialog-inner">
+      <div class="dialog-header">
+        <div>
+          <span class="badge-pill badge-live">Z09 遊艇碼頭 · 台灣 7 區 × 北美 3 區</span>
+          <h2 id="global-clubs-dialog-title" class="dialog-title">⛵ 全球福智青年社一覽表（共 61 處大專據點）</h2>
+        </div>
+        <button type="button" class="icon-btn btn-close-dialog" data-close-dialog="global-clubs-dialog" aria-label="關閉全球福智青年社一覽表">✕</button>
+      </div>
+      <div id="global-clubs-body" class="dialog-body"></div>
+    </div>
+  </dialog>
+
+  <!-- 雙棲載入架構：支援直接點擊/拖曳 file:// 開啟與 http:// 伺服器開啟 -->
+  <script defer src="./assets/island/island-data.js"></script>
+  <script defer src="./assets/island/island-3d.js"></script>
+  <script defer src="./assets/island/island-app.js"></script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+    if (typeof window.registerBwy3DClasses === 'function') {
+      window.registerBwy3DClasses(THREE, OrbitControls, BufferGeometryUtils);
+    }
+    if (typeof window.bootBwyLearningIsland === 'function') {
+      window.bootBwyLearningIsland();
+    }
+  </script>
+</body>
+</html>
