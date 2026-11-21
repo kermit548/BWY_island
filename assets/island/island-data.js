@@ -136,9 +136,9 @@ const BWY_ZONES = [
     category: 'sustainability',
     categoryLabel: '飲食永續 · 蔬食推廣',
     metaphor: '美式復古蔬食漢堡薯條快餐店與戶外紅傘座席',
-    position: { x: 14.5, y: 0, z: 10.5 },
-    cameraOffset: { x: 22.5, y: 9.5, z: 19.5 },
-    lookAtOffset: { x: 14.5, y: 2.2, z: 10.5 },
+    position: { x: 13.5, y: 0, z: 22.2 },
+    cameraOffset: { x: 21.5, y: 9.5, z: 31.2 },
+    lookAtOffset: { x: 13.5, y: 2.2, z: 22.2 },
     color: '#E26345',
     accentColor: '#F5C73B',
     activeMonths: [10, 11],
@@ -159,6 +159,22 @@ const BWY_ZONES = [
     ],
     courses: [
       {
+        semester: '114-2',
+        date: '05/27 (三)',
+        title: '夏日優格杯 DIY × 無痕生活實驗室',
+        place: '清大水木展演廳',
+        summary: '零包裝手作清爽優格杯，在炎夏中以輕負擔飲食開啟內心澄澈對話。',
+        albumUrl: 'https://photos.app.goo.gl/DDg9yyhPvQArN44S6'
+      },
+      {
+        semester: '114-1',
+        date: '11/26 (三)',
+        title: '舌尖上的地球：蔬食電影院《人如其食》',
+        place: '清大蒙民偉樓 207',
+        summary: '透過雙胞胎飲食實驗紀錄片，看見飲食選擇如何同時改變個人健康與地球環境。',
+        albumUrl: 'https://photos.app.goo.gl/9pfHBaRrxE192dT2A'
+      },
+      {
         semester: '114-1',
         date: '11/19 (三)',
         title: '【特蔬任務】蔬動全場 & 運動會擺攤',
@@ -175,28 +191,12 @@ const BWY_ZONES = [
         albumUrl: 'https://photos.app.goo.gl/34XC14XaKpG1zY6H9'
       },
       {
-        semester: '114-1',
-        date: '11/26 (三)',
-        title: '舌尖上的地球：蔬食電影院《人如其食》',
-        place: '清大蒙民偉樓 207',
-        summary: '透過雙胞胎飲食實驗紀錄片，看見飲食選擇如何同時改變個人健康與地球環境。',
-        albumUrl: 'https://photos.app.goo.gl/9pfHBaRrxE192dT2A'
-      },
-      {
         semester: '113-1',
         date: '11/27 (三)',
         title: '【特蔬任務】我一點也不怕「蔬」× 映心凍 DIY',
         place: '清大蒙民偉樓 207',
         summary: '與大道茶文化協會合辦，享用有機蔬食晚餐並親手製作外面學不到的晶透「映心凍」。',
         albumUrl: 'https://photos.app.goo.gl/1gyCW7dJ4f9RH1wa7'
-      },
-      {
-        semester: '114-2',
-        date: '05/27 (三)',
-        title: '夏日優格杯 DIY × 無痕生活實驗室',
-        place: '清大水木展演廳',
-        summary: '零包裝手作清爽優格杯，在炎夏中以輕負擔飲食開啟內心澄澈對話。',
-        albumUrl: 'https://photos.app.goo.gl/DDg9yyhPvQArN44S6'
       }
     ]
   },
@@ -209,9 +209,9 @@ const BWY_ZONES = [
     category: 'companionship',
     categoryLabel: '善友陪伴 · 家的溫暖',
     metaphor: '高掛紅燈籠、木格花窗與圓桌蒸籠的中式團圓餐館',
-    position: { x: -14.5, y: 0, z: 10.5 },
-    cameraOffset: { x: -22.5, y: 9.5, z: 19.5 },
-    lookAtOffset: { x: -14.5, y: 2.2, z: 10.5 },
+    position: { x: 14.5, y: 0, z: 10.5 },
+    cameraOffset: { x: 22.5, y: 9.5, z: 19.5 },
+    lookAtOffset: { x: 14.5, y: 2.2, z: 10.5 },
     color: '#D94E34',
     accentColor: '#F4B942',
     activeMonths: [2, 6, 8, 9, 12],
@@ -240,14 +240,6 @@ const BWY_ZONES = [
         albumUrl: 'https://photos.app.goo.gl/Rs2wotLcUNCs6QTw8'
       },
       {
-        semester: '114-1',
-        date: '08/31 (日)',
-        title: '開學，想見你｜期初關懷保溫餐聚',
-        place: '清大蒙民偉樓 4 樓',
-        summary: '穿越暑假與營隊，在開學前夕用豐盛美食與破冰遊戲重逢相聚。',
-        albumUrl: 'https://photos.app.goo.gl/6i66eDQaHvRKqJUf8'
-      },
-      {
         semester: '114-2',
         date: '06/03 (三)',
         title: '拾光·饗宴：期末蔬食自助餐 × 畢業歡送',
@@ -262,6 +254,14 @@ const BWY_ZONES = [
         place: '清大蒙民偉樓 207',
         summary: '沒有什麼是一頓飯解決不了的！透過溫暖晚餐與互動問答，發現夥伴們不為人知的小故事。',
         albumUrl: 'https://photos.app.goo.gl/yWiH83QX2WMmGtpMA'
+      },
+      {
+        semester: '114-1',
+        date: '08/31 (日)',
+        title: '開學，想見你｜期初關懷保溫餐聚',
+        place: '清大蒙民偉樓 4 樓',
+        summary: '穿越暑假與營隊，在開學前夕用豐盛美食與破冰遊戲重逢相聚。',
+        albumUrl: 'https://photos.app.goo.gl/6i66eDQaHvRKqJUf8'
       }
     ]
   },
@@ -297,12 +297,12 @@ const BWY_ZONES = [
     ],
     courses: [
       {
-        semester: '114-1',
-        date: '09/20 (六)',
-        title: '《手護海洋，淨一份心》南寮漁港跨校淨灘',
-        place: '蒙民偉樓 102 集合 → 南寮漁港觀音亭南岸沙灘',
-        summary: '結合海洋護生理念介紹與實地沙灘淨灘行動，號召清大師生彎腰守護新竹海岸線。',
-        albumUrl: 'https://photos.app.goo.gl/UFpzmQWb22VkTgNs5'
+        semester: '115-1',
+        date: '10/14 (三)',
+        title: '《森活元素》美味與環保一次擁有',
+        place: '清大風雲樓 3 樓國際學生活動中心',
+        summary: '探索餐桌選擇與環境保護之間的連結，在輕鬆遊戲中培養不塑生活習慣。',
+        albumUrl: 'https://photos.app.goo.gl/untsEW5eDKiqKwCs9'
       },
       {
         semester: '114-2',
@@ -313,12 +313,12 @@ const BWY_ZONES = [
         albumUrl: 'https://photos.app.goo.gl/QeWZTy4p2LgTL1wR6'
       },
       {
-        semester: '115-1',
-        date: '10/14 (三)',
-        title: '《森活元素》美味與環保一次擁有',
-        place: '清大風雲樓 3 樓國際學生活動中心',
-        summary: '探索餐桌選擇與環境保護之間的連結，在輕鬆遊戲中培養不塑生活習慣。',
-        albumUrl: 'https://photos.app.goo.gl/untsEW5eDKiqKwCs9'
+        semester: '114-1',
+        date: '09/20 (六)',
+        title: '《手護海洋，淨一份心》南寮漁港跨校淨灘',
+        place: '蒙民偉樓 102 集合 → 南寮漁港觀音亭南岸沙灘',
+        summary: '結合海洋護生理念介紹與實地沙灘淨灘行動，號召清大師生彎腰守護新竹海岸線。',
+        albumUrl: 'https://photos.app.goo.gl/UFpzmQWb22VkTgNs5'
       }
     ]
   },
@@ -354,12 +354,13 @@ const BWY_ZONES = [
     ],
     courses: [
       {
-        semester: '114-1',
-        date: '09/17 (三)',
-        title: '《苔苔不絕心意球》綠化環境水苔球手作課',
-        place: '清大蒙民偉樓 207',
-        summary: '教師節前夕，親手包裹水苔與綠植，做出一顆獨一無二、美觀又療癒的綠意水苔球。',
-        albumUrl: 'https://photos.app.goo.gl/LdYg7DpQpd6jjxNY7'
+        semester: '115-1',
+        date: '11/08 (日)',
+        title: '《菜鳥出任務：有機農場大冒險》富林有機農場參訪',
+        place: '新竹芎林 富林有機農場',
+        summary: '走進有機農場探索田間生態與食農教育，親手下田採菜、分組烹調現摘午餐並挑戰「米蛋捲 DIY」，在大自然中徹底充電。',
+        albumUrl: 'https://youtu.be/6Zl7W2hzeoo',
+        linkLabel: '🎬 觀看活動回顧影片'
       },
       {
         semester: '114-2',
@@ -368,6 +369,14 @@ const BWY_ZONES = [
         place: '清大蒙民偉樓 207',
         summary: '認識有機友善耕作、綠色保育標章與土地復育，體會農夫與萬物共生的智慧。',
         albumUrl: 'https://photos.app.goo.gl/jLwAN41Px3PwcZhq5'
+      },
+      {
+        semester: '114-1',
+        date: '09/17 (三)',
+        title: '《苔苔不絕心意球》綠化環境水苔球手作課',
+        place: '清大蒙民偉樓 207',
+        summary: '教師節前夕，親手包裹水苔與綠植，做出一顆獨一無二、美觀又療癒的綠意水苔球。',
+        albumUrl: 'https://photos.app.goo.gl/LdYg7DpQpd6jjxNY7'
       },
       {
         semester: '113-1',
@@ -388,9 +397,9 @@ const BWY_ZONES = [
     category: 'mindfulness',
     categoryLabel: '心靈成長 · 情緒減壓',
     metaphor: '晴雨太陽風向儀木屋與日式「忍者食堂」屋台',
-    position: { x: -11.5, y: 0, z: -15.0 },
-    cameraOffset: { x: -19.5, y: 9.5, z: -22.5 },
-    lookAtOffset: { x: -11.5, y: 2.2, z: -15.0 },
+    position: { x: 0, y: 0, z: -17.5 },
+    cameraOffset: { x: 0, y: 9.5, z: -26.5 },
+    lookAtOffset: { x: 0, y: 2.2, z: -17.5 },
     color: '#5AA4D6',
     accentColor: '#FF9F43',
     activeMonths: [3, 10],
@@ -453,9 +462,9 @@ const BWY_ZONES = [
     category: 'gratitude',
     categoryLabel: '觀功念恩 · 卡片傳恩情',
     metaphor: '復古暖綠郵局亭、紅綠雙郵筒、飛翔翅膀明信片與手作工坊',
-    position: { x: -18.0, y: 0, z: -1.5 },
-    cameraOffset: { x: -26.5, y: 9.5, z: 6.5 },
-    lookAtOffset: { x: -18.0, y: 2.0, z: -1.5 },
+    position: { x: -11.5, y: 0, z: -15.0 },
+    cameraOffset: { x: -19.5, y: 9.5, z: -22.5 },
+    lookAtOffset: { x: -11.5, y: 2.0, z: -15.0 },
     color: '#E87A90',
     accentColor: '#52A675',
     activeMonths: [4, 5, 9],
@@ -477,6 +486,14 @@ const BWY_ZONES = [
     courses: [
       {
         semester: '115-1',
+        date: '09/30 (三)',
+        title: '《上週的作業是說謝謝》幕後功臣線上互動與感恩串聯',
+        place: '清大蒙民偉樓 206',
+        summary: '透過互動遊戲與影像回顧，看見活動背後默默付出的小齒輪，把感謝化為溫暖旋律。',
+        albumUrl: 'https://photos.app.goo.gl/sRMJ7KxutR8D8DbF7'
+      },
+      {
+        semester: '115-1',
         date: '09/23 (三)',
         title: '《紙上的溫柔｜給老師的明信片》教師節免費卡傳',
         place: '清大小吃部前廣場',
@@ -484,12 +501,12 @@ const BWY_ZONES = [
         albumUrl: 'https://photos.app.goo.gl/nmED1ExJjfRvSrbs7'
       },
       {
-        semester: '114-1',
-        date: '09/24 (三)',
-        title: '《今天的作業是說謝謝》教師節快閃擺攤',
-        place: '清大小吃部',
-        summary: '今天不是算數學題或寫實驗報告，今天的作業是一句簡單的「謝謝」，寄給曾為你點亮方向的引路人。',
-        albumUrl: 'https://photos.app.goo.gl/Ez4k6hf3Zen2A3gc6'
+        semester: '114-2',
+        date: '05/06 (三)',
+        title: '《「果」然很愛你》母親節果凍蠟燭手作體驗',
+        place: '清大蒙民偉樓 206',
+        summary: '記憶裡的愛像果凍蠟燭般剔透，靜下心親手製作一份最暖心的母親節禮物。',
+        albumUrl: 'https://photos.app.goo.gl/nSGKH55ZHFVv9xrY7'
       },
       {
         semester: '114-2',
@@ -500,12 +517,12 @@ const BWY_ZONES = [
         albumUrl: 'https://photos.app.goo.gl/RMhpMsnrwbeBTPuA8'
       },
       {
-        semester: '114-2',
-        date: '05/06 (三)',
-        title: '《「果」然很愛你》母親節果凍蠟燭手作體驗',
-        place: '清大蒙民偉樓 206',
-        summary: '記憶裡的愛像果凍蠟燭般剔透，靜下心親手製作一份最暖心的母親節禮物。',
-        albumUrl: 'https://photos.app.goo.gl/nSGKH55ZHFVv9xrY7'
+        semester: '114-1',
+        date: '09/24 (三)',
+        title: '《今天的作業是說謝謝》教師節快閃擺攤',
+        place: '清大小吃部',
+        summary: '今天不是算數學題或寫實驗報告，今天的作業是一句簡單的「謝謝」，寄給曾為你點亮方向的引路人。',
+        albumUrl: 'https://photos.app.goo.gl/Ez4k6hf3Zen2A3gc6'
       }
     ]
   },
@@ -517,10 +534,10 @@ const BWY_ZONES = [
     subtitle: '福青讚頌團 GCM × Live Podcast × MIT 多媒體攝影',
     category: 'mindfulness',
     categoryLabel: '藝術淨化 · 發現美好',
-    metaphor: '金色音符拱門、木吉他鍵盤舞台與星光草地劇場',
-    position: { x: 0, y: 0, z: 17.5 },
-    cameraOffset: { x: 0, y: 9.5, z: 26.5 },
-    lookAtOffset: { x: 0, y: 2.2, z: 17.5 },
+    metaphor: '金色音符拱門、木吉他與爵士架子鼓舞台、星光草地劇場',
+    position: { x: -18.0, y: 0, z: -1.5 },
+    cameraOffset: { x: -26.5, y: 9.5, z: 6.5 },
+    lookAtOffset: { x: -18.0, y: 2.2, z: -1.5 },
     color: '#8B73B4',
     accentColor: '#F5C73B',
     activeMonths: [5, 7, 12],
@@ -555,14 +572,6 @@ const BWY_ZONES = [
         place: '清大校園與外拍景點',
         summary: '由專業攝影師帶領，學習從最容易忽略的生活場景中透過鏡頭發現美的存在。',
         albumUrl: 'https://photos.app.goo.gl/Bquew41K1SeESvai6'
-      },
-      {
-        semester: '115-1',
-        date: '09/30 (三)',
-        title: '《上週的作業是說謝謝》幕後功臣線上互動與感恩串聯',
-        place: '清大蒙民偉樓 206',
-        summary: '透過互動遊戲與影像回顧，看見活動背後默默付出的小齒輪，把感謝化為溫暖旋律。',
-        albumUrl: 'https://photos.app.goo.gl/sRMJ7KxutR8D8DbF7'
       }
     ]
   },
@@ -575,9 +584,9 @@ const BWY_ZONES = [
     category: 'growth',
     categoryLabel: '立志利他 · 職涯與營隊',
     metaphor: '八色玩具摩天輪、希望蒸汽火車站與 All Pass 糖得來速亭',
-    position: { x: 0, y: 0, z: -17.5 },
-    cameraOffset: { x: 0, y: 10.5, z: -26.5 },
-    lookAtOffset: { x: 0, y: 3.5, z: -17.5 },
+    position: { x: -14.5, y: 0, z: 10.5 },
+    cameraOffset: { x: -22.5, y: 10.5, z: 19.5 },
+    lookAtOffset: { x: -14.5, y: 3.5, z: 10.5 },
     color: '#F59E0B',
     accentColor: '#3B82F6',
     activeMonths: [1, 3, 4, 7, 8, 10, 12],
@@ -599,22 +608,6 @@ const BWY_ZONES = [
     ],
     courses: [
       {
-        semester: '113-2',
-        date: '03/19 (三)',
-        title: '《名人職涯講座》還在為未來迷惘嗎？科技業資深講者來解惑！',
-        place: '清大蒙民偉樓 102',
-        summary: '邀請多位科技業資深前輩與清交同學面對面對談，剖析升學 vs. 就業趨勢，少走冤枉路。',
-        albumUrl: 'https://photos.app.goo.gl/ZvbsMmQFdNkVtqeq5'
-      },
-      {
-        semester: '113-1 & 114-1',
-        date: '09/28–09/29',
-        title: '《福青 Fun 心二日營》大地戲水 × 美味蔬食 × 螢火蟲之約',
-        place: '苗栗熊月山莊',
-        summary: '兩天一夜走出校園，在山林與星空下輕鬆打開心房，讓彼此的生命擁有更多深刻交集。',
-        albumUrl: 'https://photos.app.goo.gl/XEDL64RXvCThVV8J8'
-      },
-      {
         semester: '113-1 ~ 115-1',
         date: '每年 4 月 / 10 月 / 12 月',
         title: '《期中期末關懷得來速》All Pass 糖 × 馬拉松補給站',
@@ -629,6 +622,22 @@ const BWY_ZONES = [
         place: '清大蒙民偉樓 206',
         summary: '在期中考週緊繃的節奏裡，提供一處不談分數、只談關心與陪伴的溫暖中繼站。',
         albumUrl: 'https://photos.app.goo.gl/v5C8zJ6ABGCYVkRK9'
+      },
+      {
+        semester: '113-1 & 114-1',
+        date: '09/28–09/29',
+        title: '《福青 Fun 心二日營》大地戲水 × 美味蔬食 × 螢火蟲之約',
+        place: '苗栗熊月山莊',
+        summary: '兩天一夜走出校園，在山林與星空下輕鬆打開心房，讓彼此的生命擁有更多深刻交集。',
+        albumUrl: 'https://photos.app.goo.gl/XEDL64RXvCThVV8J8'
+      },
+      {
+        semester: '113-2',
+        date: '03/19 (三)',
+        title: '《名人職涯講座》還在為未來迷惘嗎？科技業資深講者來解惑！',
+        place: '清大蒙民偉樓 102',
+        summary: '邀請多位科技業資深前輩與清交同學面對面對談，剖析升學 vs. 就業趨勢，少走冤枉路。',
+        albumUrl: 'https://photos.app.goo.gl/ZvbsMmQFdNkVtqeq5'
       }
     ]
   },
@@ -692,9 +701,9 @@ const BWY_ZONES = [
     category: 'network',
     categoryLabel: '跨島連動 · 天空之城蔬食地圖',
     metaphor: '微縮天空之城浮島、清大公共藝術「清鏡門」（1/3 北京清華校門與玻璃鏡）、青花菜熱氣球與清大 75 秒讀秒紅綠燈',
-    position: { x: 13.5, y: 0, z: 22.2 },
-    cameraOffset: { x: 21.5, y: 10.5, z: 31.5 },
-    lookAtOffset: { x: 13.5, y: 3.2, z: 22.2 },
+    position: { x: 0, y: 0, z: 17.5 },
+    cameraOffset: { x: 0, y: 10.5, z: 27.5 },
+    lookAtOffset: { x: 0, y: 3.2, z: 17.5 },
     color: '#4A8584',
     accentColor: '#EA7A2E',
     activeMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -1026,7 +1035,7 @@ const BWY_TREASURES = [
     zoneName: '西式蔬食快餐館',
     hint: '點擊佇立在東南角西式快餐館屋頂上的金黃芝麻蔬食大漢堡。',
     meaning: '少肉多蔬食，生產植物性飲食可省下 90% 水資源！',
-    position: { x: 13.65, y: 3.45, z: 10.2 }
+    position: { x: 12.65, y: 3.45, z: 21.9 }
   },
   {
     id: 'egg-04',
@@ -1035,16 +1044,16 @@ const BWY_TREASURES = [
     zoneName: '西式蔬食快餐館',
     hint: '點擊快餐館戶外紅傘野餐桌上的晶透茶凍甜點杯。',
     meaning: '來自大道茶文化協會合辦社課的獨家有機茶點手作記憶。',
-    position: { x: 16.9, y: 1.15, z: 12.4 }
+    position: { x: 15.9, y: 1.15, z: 24.1 }
   },
   {
     id: 'egg-05',
     name: '老師手作窯烤麵包與燉麵鍋',
     zoneId: 'zone-chinese-feast',
     zoneName: '中式團圓飯館',
-    hint: '點擊西南角中式團圓飯館前庭大圓桌中央的竹蒸籠與燉麵鍋。',
+    hint: '點擊中式團圓飯館前庭大圓桌中央的竹蒸籠與燉麵鍋。',
     meaning: '匯聚輔導老師群手作窯烤麵包、牛番茄燉麵與芋頭西米露的期末饗宴。',
-    position: { x: -14.45, y: 1.25, z: 12.8 }
+    position: { x: 14.55, y: 1.25, z: 12.8 }
   },
   {
     id: 'egg-06',
@@ -1069,45 +1078,45 @@ const BWY_TREASURES = [
     name: '公共藝術「清鏡門」（1/3 北京清華二校門）',
     zoneId: 'zone-sky-veggie-portal',
     zoneName: '天空之城蔬食浮島連動門',
-    hint: '仰望並點擊漂浮天空之城蔬食浮島上鑲嵌青綠鏡牆的白色「清鏡門」。',
+    hint: '仰望並點擊正南方漂浮天空之城蔬食浮島上鑲嵌青綠鏡牆的白色「清鏡門」。',
     meaning: '清大校園著名公共藝術「清鏡門」映照雙校情誼，也邀請我們像照鏡子般看見善念與成長。',
-    position: { x: 13.68, y: 5.2, z: 21.85 }
+    position: { x: 0.35, y: 5.2, z: 17.88 }
   },
   {
     id: 'egg-09',
     name: '忍者食堂「情緒辨辨丸」',
     zoneId: 'zone-emotion-weather',
     zoneName: '情緒氣象觀測屋',
-    hint: '點擊西北角情緒氣象觀測屋旁屋台上的日式三色糰子串。',
+    hint: '點擊正北方情緒氣象觀測屋旁屋台上的日式三色糰子串。',
     meaning: 'SEE-L 情緒忍術奧義：先為身體按下暫停鍵，看見並溫柔接納自己的情緒。',
-    position: { x: -9.65, y: 2.8, z: -13.6 }
+    position: { x: 1.85, y: 2.8, z: -16.1 }
   },
   {
     id: 'egg-10',
     name: '飛翔翅膀感恩明信片',
     zoneId: 'zone-gratitude-post',
     zoneName: '感恩卡傳郵局',
-    hint: '點擊正西方感恩卡傳郵局屋頂上插著潔白翅膀的巨型明信片。',
+    hint: '點擊西北角感恩卡傳郵局屋頂上插著潔白翅膀的巨型明信片。',
     meaning: '免費卡片、免費寄送！自 2002 年起把清大學子的感謝寄往全球。',
-    position: { x: -18.0, y: 4.2, z: -1.7 }
+    position: { x: -11.5, y: 4.2, z: -15.2 }
   },
   {
     id: 'egg-11',
     name: '天空之旅黃金木吉他',
     zoneId: 'zone-chant-stage',
     zoneName: '天空之旅露天音樂台',
-    hint: '點擊正南方露天音樂台音符拱門中央的巨型溫暖木吉他。',
+    hint: '點擊正西方露天音樂台音符拱門右側的巨型溫暖木吉他。',
     meaning: '用美好的心歌唱美好的心，乘著讚頌的翅膀飛向幸福。',
-    position: { x: 1.2, y: 2.2, z: 17.4 }
+    position: { x: -16.8, y: 2.2, z: -1.6 }
   },
   {
     id: 'egg-12',
     name: '期中歐趴「All Pass 糖」能量包',
     zoneId: 'zone-growth-wheel',
     zoneName: '生命領航摩天輪與成長車站',
-    hint: '點擊正北方摩天輪車站旁「關懷得來速」藍金小亭前方的歐趴糖能量禮袋。',
+    hint: '點擊西南角摩天輪車站旁「關懷得來速」藍金小亭前方的歐趴糖能量禮袋。',
     meaning: '期中期末考馬拉松最暖心的補給，祝你關關輕鬆過、懷抱高分歸！',
-    position: { x: 2.8, y: 1.35, z: -15.6 }
+    position: { x: -11.7, y: 1.35, z: 12.2 }
   }
 ];
 

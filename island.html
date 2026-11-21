@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant-TW" data-theme="day">
+<html lang="zh-Hant-TW" data-theme="night">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -58,9 +58,9 @@
           </button>
         </div>
         <div id="hud-more-group" class="hud-more-group">
-          <button type="button" id="btn-cycle-time" class="hud-btn" title="切換晨曦、暖陽、黃昏、星光四時段光影">
-            <span id="time-icon" aria-hidden="true">☀️</span>
-            <span id="time-label">暖陽日</span>
+          <button type="button" id="btn-cycle-time" class="hud-btn" title="切換星光煙火夜、暖陽日、黃昏燈、晨曦光四時段光影">
+            <span id="time-icon" aria-hidden="true">🎆</span>
+            <span id="time-label">星光煙火夜</span>
           </button>
           <button type="button" id="btn-toggle-audio" class="hud-btn" aria-pressed="true" title="開關溫暖木琴互動音效">
             <span id="audio-icon" aria-hidden="true">🔔</span>
@@ -280,6 +280,7 @@
 
   <!-- 雙棲載入架構：支援直接點擊/拖曳 file:// 開啟與 http:// 伺服器開啟 -->
   <script defer src="./assets/island/island-data.js"></script>
+  <script defer src="./assets/island/island-carnival.js"></script>
   <script defer src="./assets/island/island-3d.js"></script>
   <script defer src="./assets/island/island-app.js"></script>
   <script type="module">
@@ -287,6 +288,9 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
+    if (typeof window.__initBwyCarnivalModule === 'function') {
+      window.__initBwyCarnivalModule(THREE);
+    }
     if (typeof window.registerBwy3DClasses === 'function') {
       window.registerBwy3DClasses(THREE, OrbitControls, BufferGeometryUtils);
     }

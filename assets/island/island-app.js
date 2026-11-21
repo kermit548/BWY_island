@@ -83,8 +83,8 @@ class BwyLearningIslandApp {
     this.audio = new BwyToyAudio();
     this.selectedCategories = new Set();
     this.searchQuery = '';
-    this.activeTargetId = BWY_CENTRAL_HUB.id;
-    this.timeOrder = ['day', 'dusk', 'night', 'dawn'];
+    this.activeTargetId = 'zone-sky-veggie-portal';
+    this.timeOrder = ['night', 'day', 'dusk', 'dawn'];
     this.timeIndex = 0;
 
     this.liveStatus = getBwyLiveStatus(new Date());
@@ -98,7 +98,7 @@ class BwyLearningIslandApp {
     this.syncHudOffset();
     this.renderThemeFilterOptions();
     this.renderDirectoryList();
-    this.renderDetailPanel(BWY_CENTRAL_HUB);
+    this.renderDetailPanel(this.findTargetById(this.activeTargetId));
     this.renderAboutDialog();
     this.renderQuizDialog();
     this.renderTreasureDialog();
@@ -448,7 +448,9 @@ class BwyLearningIslandApp {
         link.href = course.albumUrl;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
-        link.textContent = target.isSkyIslandPortal
+        link.textContent = course.linkLabel
+          ? course.linkLabel
+          : target.isSkyIslandPortal
           ? '🚀 開啟連動專案 / 開發紀錄'
           : target.isGlobalMarina
           ? '🌐 查看福智文教基金會官方公告'
@@ -1065,9 +1067,9 @@ class BwyLearningIslandApp {
       if (this.engine3D) this.engine3D.setTimeOfDay(mode);
 
       const metaMap = {
+        night: { icon: '🎆', label: '星光煙火夜' },
         day: { icon: '☀️', label: '暖陽日' },
         dusk: { icon: '🌇', label: '黃昏燈' },
-        night: { icon: '🌙', label: '星光夜' },
         dawn: { icon: '🌅', label: '晨曦光' }
       };
       this.dom.timeIcon.textContent = metaMap[mode].icon;

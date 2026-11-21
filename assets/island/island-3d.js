@@ -78,6 +78,162 @@ function bakeStaticGroup(rootGroup) {
   return stats;
 }
 
+// Parallel-Transport (Bishop Frame) 零扭轉變徑圓管（供清華胖達連帽衫袖口、雙腿與 NTHU 立體刺繡使用）
+function makePandaVariableTube(controlNodes, material, tubularSegs = 28, radialSegs = 14, closed = false) {
+  const pts = controlNodes.map((n) => new THREE.Vector3(...n.p));
+  const curve = new THREE.CatmullRomCurve3(pts, closed, 'catmullrom', 0.45);
+
+  const radiusAt = (t) => {
+    if (closed) {
+      const n = controlNodes.length;
+      const scaled = (t % 1) * n;
+      const i0 = Math.floor(scaled) % n;
+      const i1 = (i0 + 1) % n;
+      const f = scaled - Math.floor(scaled);
+      const s = f * f * (3 - 2 * f);
+      return controlNodes[i0].r * (1 - s) + controlNodes[i1].r * s;
+    }
+    const scaled = t * (controlNodes.length - 1);
+    const i0 = Math.min(controlNodes.length - 2, Math.max(0, Math.floor(scaled)));
+    const f = scaled - i0;
+    const s = f * f * (3 - 2 * f);
+    return controlNodes[i0].r * (1 - s) + controlNodes[i0 + 1].r * s;
+  };
+
+  const tangents = [];
+  const normals = [];
+  const binormals = [];
+
+  for (let i = 0; i <= tubularSegs; i++) {
+    tangents.push(curve.getTangentAt(i / tubularSegs).normalize());
+  }
+
+  const ref = new THREE.Vector3(0, 1, 0);
+  if (Math.abs(tangents[0].dot(ref)) > 0.85) ref.set(0, 0, 1);
+  let nPrev = ref.clone().addScaledVector(tangents[0], -ref.dot(tangents[0])).normalize();
+  normals.push(nPrev.clone());
+  binormals.push(new THREE.Vector3().crossVectors(tangents[0], nPrev).normalize());
+
+  for (let i = 1; i <= tubularSegs; i++) {
+    const tPrev = tangents[i - 1];
+    const tCurr = tangents[i];
+    const axis = new THREE.Vector3().crossVectors(tPrev, tCurr);
+    if (axis.lengthSq() > 1e-10) {
+      axis.normalize();
+      const angle = Math.acos(Math.min(1, Math.max(-1, tPrev.dot(tCurr))));
+      nPrev = nPrev.clone().applyAxisAngle(axis, angle);
+    }
+    nPrev.addScaledVector(tCurr, -nPrev.dot(tCurr)).normalize();
+    normals.push(nPrev.clone());
+    binormals.push(new THREE.Vector3().crossVectors(tCurr, nPrev).normalize());
+  }
+
+  if (closed) {
+    const nStart = normals[0];
+    const nEnd = normals[tubularSegs];
+    const bStart = binormals[0];
+    const twistErr = Math.atan2(nEnd.dot(bStart), nEnd.dot(nStart));
+    for (let i = 1; i <= tubularSegs; i++) {
+      const corr = -twistErr * (i / tubularSegs);
+      normals[i].applyAxisAngle(tangents[i], corr).normalize();
+      binormals[i].crossVectors(tangents[i], normals[i]).normalize();
+    }
+  }
+
+  const capRings = 4;
+  const rings = [];
+
+  if (!closed) {
+    const c0 = curve.getPointAt(0);
+    const r0 = radiusAt(0);
+    const T0 = tangents[0];
+    const N0 = normals[0];
+    const B0 = binormals[0];
+    for (let c = capRings; c >= 1; c--) {
+      const phi = (c / capRings) * (Math.PI / 2);
+      const center = c0.clone().addScaledVector(T0, -Math.sin(phi) * r0);
+      const ringR = Math.max(0.0004, Math.cos(phi) * r0);
+      rings.push({ center, N: N0, B: B0, r: ringR });
+    }
+  }
+
+  for (let i = 0; i <= tubularSegs; i++) {
+    const t = i / tubularSegs;
+    rings.push({
+      center: curve.getPointAt(t),
+      N: normals[i],
+      B: binormals[i],
+      r: radiusAt(t)
+    });
+  }
+
+  if (!closed) {
+    const c1 = curve.getPointAt(1);
+    const r1 = radiusAt(1);
+    const T1 = tangents[tubularSegs];
+    const N1 = normals[tubularSegs];
+    const B1 = binormals[tubularSegs];
+    for (let c = 1; c <= capRings; c++) {
+      const phi = (c / capRings) * (Math.PI / 2);
+      const center = c1.clone().addScaledVector(T1, Math.sin(phi) * r1);
+      const ringR = Math.max(0.0004, Math.cos(phi) * r1);
+      rings.push({ center, N: N1, B: B1, r: ringR });
+    }
+  }
+
+  const positions = [];
+  const indices = [];
+
+  for (let i = 0; i < rings.length; i++) {
+    const { center, N, B, r } = rings[i];
+    for (let j = 0; j <= radialSegs; j++) {
+      const theta = (j / radialSegs) * Math.PI * 2;
+      const cos = Math.cos(theta);
+      const sin = Math.sin(theta);
+      positions.push(
+        center.x + r * (cos * N.x + sin * B.x),
+        center.y + r * (cos * N.y + sin * B.y),
+        center.z + r * (cos * N.z + sin * B.z)
+      );
+    }
+  }
+
+  const stride = radialSegs + 1;
+  for (let i = 0; i < rings.length - 1; i++) {
+    for (let j = 0; j < radialSegs; j++) {
+      const a = i * stride + j;
+      const b = (i + 1) * stride + j;
+      const c = (i + 1) * stride + (j + 1);
+      const d = i * stride + (j + 1);
+      indices.push(a, d, b);
+      indices.push(d, c, b);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function makePandaEllipsoid(r, scale, pos, material, seg = 22, rot = [0, 0, 0]) {
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry(r, seg, Math.round(seg * 0.8)),
+    material
+  );
+  m.scale.set(scale[0], scale[1], scale[2]);
+  m.position.set(pos[0], pos[1], pos[2]);
+  if (rot[0] || rot[1] || rot[2]) m.rotation.set(rot[0], rot[1], rot[2]);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
 class BwyIsland3DEngine {
   /**
    * @param {Object} opts
@@ -115,7 +271,7 @@ class BwyIsland3DEngine {
       miniSkyIsland: null
     };
 
-    this.timeMode = 'day';
+    this.timeMode = 'night';
     this.clock = new THREE.Clock();
     this.cameraFlight = null;
     this.pointerDownPos = { x: 0, y: 0 };
@@ -129,14 +285,18 @@ class BwyIsland3DEngine {
     });
 
     this.initScene();
+    this.carnival = typeof window.BwyCarnivalUpgrade === 'function' ? new window.BwyCarnivalUpgrade(this) : null;
     this.buildBaseParkIsland();
     this.buildBwyHotAirBalloonHub();
     this.buildAllZoneDioramas();
     this.buildThemeParkTrain();
     this.buildTreasureMarkers();
+    if (this.carnival) this.carnival.buildAll();
 
     this.bakeStats = bakeStaticGroup(this.staticRoot);
+    window.__ISLAND_METRICS__ = this.bakeStats;
     this.buildDomLabels();
+    this.setTimeOfDay(this.timeMode);
     this.bindEvents();
     this.startLoop();
   }
@@ -151,7 +311,8 @@ class BwyIsland3DEngine {
     const emissiveIntensity = opts.emissiveIntensity ?? 0;
     const transparent = opts.transparent ?? false;
     const opacity = opts.opacity ?? 1.0;
-    const key = `${hex}_${roughness}_${metalness}_${emissive}_${emissiveIntensity}_${transparent}_${opacity}`;
+    const flatShading = opts.flatShading ?? false;
+    const key = `${hex}_${roughness}_${metalness}_${emissive}_${emissiveIntensity}_${transparent}_${opacity}_${flatShading}`;
     if (!this.materials.has(key)) {
       this.materials.set(
         key,
@@ -162,7 +323,8 @@ class BwyIsland3DEngine {
           emissive: new THREE.Color(emissive),
           emissiveIntensity,
           transparent,
-          opacity
+          opacity,
+          flatShading
         })
       );
     }
@@ -177,7 +339,7 @@ class BwyIsland3DEngine {
     const w = this.canvas.clientWidth || window.innerWidth;
     const h = this.canvas.clientHeight || window.innerHeight;
     this.camera = new THREE.PerspectiveCamera(42, w / h, 0.5, 320);
-    this.camera.position.set(0, 25, 42);
+    this.camera.position.set(0, 21.5, 47);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
@@ -198,7 +360,7 @@ class BwyIsland3DEngine {
     this.controls.minPolarAngle = Math.PI * 0.1;
     this.controls.minDistance = 9;
     this.controls.maxDistance = 68;
-    this.controls.target.set(0, 2.5, 0);
+    this.controls.target.set(0, 5.4, -1);
 
     // 溫暖玩具風三點式打光
     this.hemiLight = new THREE.HemisphereLight('#fff9eb', '#d9a773', 1.05);
@@ -232,11 +394,11 @@ class BwyIsland3DEngine {
    * 建構主題遊樂園主島嶼基座、環狀步道、小火車鐵軌與周邊玩具樹木
    */
   buildBaseParkIsland() {
-    // 1. 無邊際深海平面 + 環島淺灘海灣（消除圓形邊緣斷層感）
+    // 1. 無邊際深海平面 + 環島淺灘海灣（增強水面倒影反光，映照煙火與彩燈）
     this.deepSeaMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#133a5c'),
-      roughness: 0.42,
-      metalness: 0.05
+      color: new THREE.Color('#09182e'),
+      roughness: 0.16,
+      metalness: 0.44
     });
     const deepSeaGeo = new THREE.CylinderGeometry(280, 280, 1.2, 48);
     const deepSeaMesh = new THREE.Mesh(deepSeaGeo, this.deepSeaMat);
@@ -245,28 +407,28 @@ class BwyIsland3DEngine {
     this.dynamicRoot.add(deepSeaMesh);
 
     const seaGeo = new THREE.CylinderGeometry(33.5, 36.5, 1.35, 48);
-    const seaMesh = new THREE.Mesh(seaGeo, this.mat('#3895ba', { roughness: 0.35 }));
+    const seaMesh = new THREE.Mesh(seaGeo, this.mat('#2b7fa3', { roughness: 0.14, metalness: 0.48 }));
     seaMesh.position.y = -1.48;
     seaMesh.receiveShadow = true;
     this.staticRoot.add(seaMesh);
 
-    // 2. 溫暖大地岩層底座
+    // 2. 溫暖大地岩層底座（解法 B：調降高彩度為大地質感陶褐）
     const rockGeo = new THREE.CylinderGeometry(26.5, 23.5, 2.2, 36);
-    const rockMesh = new THREE.Mesh(rockGeo, this.mat('#d99b66'));
+    const rockMesh = new THREE.Mesh(rockGeo, this.mat('#c78d5c', { roughness: 0.78 }));
     rockMesh.position.y = -1.1;
     rockMesh.receiveShadow = true;
     this.staticRoot.add(rockMesh);
 
-    // 3. 翠綠玩具草坪主島面
+    // 3. 鼠尾草綠草坪主島面（解法 B：降彩度、提升夜間霓虹與黃銅反光對比）
     const lawnGeo = new THREE.CylinderGeometry(25.8, 26.4, 0.9, 36);
-    const lawnMesh = new THREE.Mesh(lawnGeo, this.mat('#88c959'));
+    const lawnMesh = new THREE.Mesh(lawnGeo, this.mat('#6da851', { roughness: 0.78 }));
     lawnMesh.position.y = -0.35;
     lawnMesh.receiveShadow = true;
     this.staticRoot.add(lawnMesh);
 
-    // 4. 中央奶油石磚圓形主廣場
+    // 4. 中央暖砂石磚圓形主廣場
     const plazaGeo = new THREE.CylinderGeometry(7.2, 7.5, 0.22, 32);
-    const plazaMesh = new THREE.Mesh(plazaGeo, this.mat('#f8eed9'));
+    const plazaMesh = new THREE.Mesh(plazaGeo, this.mat('#f2e5cc', { roughness: 0.76 }));
     plazaMesh.position.y = 0.11;
     plazaMesh.receiveShadow = true;
     this.staticRoot.add(plazaMesh);
@@ -288,7 +450,7 @@ class BwyIsland3DEngine {
         const t = i / steps;
         const stone = new THREE.Mesh(
           new THREE.CylinderGeometry(0.95, 1.05, 0.12, 12),
-          this.mat(i % 2 === 0 ? '#f6e7cb' : '#ebd5b3')
+          this.mat(i % 2 === 0 ? '#ede0c7' : '#e2d0b0')
         );
         stone.position.set(dx * t, 0.08, dz * t);
         stone.rotation.y = angle;
@@ -299,7 +461,7 @@ class BwyIsland3DEngine {
       // 每個園區專屬底座圓盤
       const pad = new THREE.Mesh(
         new THREE.CylinderGeometry(4.6, 4.9, 0.25, 24),
-        this.mat('#f9f0de')
+        this.mat('#efe2c8', { roughness: 0.76 })
       );
       pad.position.set(dx, 0.12, dz);
       pad.receiveShadow = true;
@@ -327,40 +489,51 @@ class BwyIsland3DEngine {
       this.staticRoot.add(sleeper);
     }
 
-    // 7. 園區外圍溫暖玩具樹群與路燈
+    // 7. 園區外圍幾何切面低多邊形（Faceted Low-Poly）樹群
     const treeAngles = [0.22, 0.58, 1.05, 1.38, 1.85, 2.25, 2.68, 3.45, 3.88, 4.35, 4.95, 5.42, 5.95];
     treeAngles.forEach((a, idx) => {
       const r = idx % 2 === 0 ? 22.8 : 9.0;
       const tx = Math.cos(a) * r;
       const tz = Math.sin(a) * r;
-      this.addToyTree(tx, tz, 0.85 + (idx % 3) * 0.2, idx % 2 === 0 ? '#74b843' : '#95cd4f');
+      this.addToyTree(tx, tz, 0.85 + (idx % 3) * 0.2, idx % 2 === 0 ? '#4d8c40' : '#639e4c');
     });
   }
 
-  addToyTree(x, z, scale = 1, crownColor = '#74b843') {
+  addToyTree(x, z, scale = 1, crownColor = '#4d8c40') {
     const trunk = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.22 * scale, 0.32 * scale, 1.2 * scale, 10),
-      this.mat('#9c6638')
+      new THREE.CylinderGeometry(0.2 * scale, 0.3 * scale, 1.22 * scale, 7),
+      this.mat('#8c5c34', { flatShading: true, roughness: 0.82 })
     );
     trunk.position.set(x, 0.6 * scale, z);
     trunk.castShadow = true;
     this.staticRoot.add(trunk);
 
     const c1 = new THREE.Mesh(
-      new THREE.SphereGeometry(0.95 * scale, 12, 10),
-      this.mat(crownColor)
+      new THREE.IcosahedronGeometry(0.94 * scale, 1),
+      this.mat(crownColor, { flatShading: true, roughness: 0.78 })
     );
     c1.position.set(x, 1.65 * scale, z);
+    c1.rotation.set(0.24, x * 0.35, -0.18);
     c1.castShadow = true;
     this.staticRoot.add(c1);
 
     const c2 = new THREE.Mesh(
-      new THREE.SphereGeometry(0.68 * scale, 10, 8),
-      this.mat('#a8db64')
+      new THREE.IcosahedronGeometry(0.66 * scale, 1),
+      this.mat('#7cb35b', { flatShading: true, roughness: 0.78 })
     );
-    c2.position.set(x + 0.3 * scale, 2.25 * scale, z - 0.2 * scale);
+    c2.position.set(x + 0.32 * scale, 2.24 * scale, z - 0.2 * scale);
+    c2.rotation.set(-0.32, z * 0.4, 0.22);
     c2.castShadow = true;
     this.staticRoot.add(c2);
+
+    const c3 = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.54 * scale, 1),
+      this.mat('#589445', { flatShading: true, roughness: 0.78 })
+    );
+    c3.position.set(x - 0.34 * scale, 2.02 * scale, z + 0.24 * scale);
+    c3.rotation.set(0.18, (x + z) * 0.25, -0.28);
+    c3.castShadow = true;
+    this.staticRoot.add(c3);
   }
 
   /**
@@ -1029,7 +1202,7 @@ class BwyIsland3DEngine {
     arch2.position.set(x, 0.7, z - 0.5);
     this.staticRoot.add(arch1, arch2);
 
-    // 舞台中央巨型木吉他地標
+    // 舞台右側巨型木吉他地標
     const guitarBody1 = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.28, 16), this.mat('#d98236'));
     guitarBody1.rotation.x = Math.PI / 2;
     guitarBody1.position.set(x + 1.2, 1.45, z - 0.1);
@@ -1040,6 +1213,68 @@ class BwyIsland3DEngine {
     guitarNeck.position.set(x + 1.2, 3.1, z - 0.1);
     this.staticRoot.add(guitarBody1, guitarBody2, guitarNeck);
     this.registerTreasureHitbox('egg-11', [1.7, 3.0, 1.1], new THREE.Vector3(x + 1.2, 2.2, z - 0.1), this.dynamicRoot, true);
+
+    // 舞台左側爵士架子鼓組（大鼓 + 雙中鼓 + 小鼓 + 落地鼓 + 金色雙銅鈸與腳踏鈸）
+    const dx = x - 1.15;
+    const dz = z - 0.05;
+    const drumRed = this.mat('#e24735');
+    const drumHead = this.mat('#fff8eb');
+    const drumStand = this.mat('#cbd5e1', { roughness: 0.35, metalness: 0.65 });
+    const cymbalMat = this.mat('#f5c73b', { roughness: 0.25, metalness: 0.65, emissive: '#d97706', emissiveIntensity: 0.25 });
+
+    // 1. 中央大鼓 (Bass Drum)
+    const bassShell = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.48, 18), drumRed);
+    bassShell.rotation.x = Math.PI / 2;
+    bassShell.position.set(dx, 1.28, dz);
+    const bassFace = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.52, 18), drumHead);
+    bassFace.rotation.x = Math.PI / 2;
+    bassFace.position.set(dx, 1.28, dz);
+    this.staticRoot.add(bassShell, bassFace);
+
+    // 2. 雙中鼓 (High & Mid Rack Toms)
+    [-0.3, 0.3].forEach((tx, idx) => {
+      const tomShell = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.25, 0.25, 0.28, 14),
+        idx === 0 ? drumRed : this.mat('#5aa4d6')
+      );
+      tomShell.position.set(dx + tx, 1.9, dz - 0.06);
+      tomShell.rotation.x = 0.38;
+      tomShell.rotation.z = tx > 0 ? -0.18 : 0.18;
+      const tomTop = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.3, 14), drumHead);
+      tomTop.position.copy(tomShell.position);
+      tomTop.rotation.copy(tomShell.rotation);
+      this.staticRoot.add(tomShell, tomTop);
+    });
+
+    // 3. 左側小鼓 (Snare Drum) 與右側落地鼓 (Floor Tom)
+    const snareStand = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.65, 8), drumStand);
+    snareStand.position.set(dx - 0.68, 1.05, dz + 0.22);
+    const snareShell = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.18, 14), this.mat('#f5c73b'));
+    snareShell.position.set(dx - 0.68, 1.42, dz + 0.22);
+    snareShell.rotation.x = 0.15;
+    const snareTop = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.2, 14), drumHead);
+    snareTop.position.copy(snareShell.position);
+    snareTop.rotation.copy(snareShell.rotation);
+
+    const floorTom = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.52, 14), drumRed);
+    floorTom.position.set(dx + 0.68, 1.18, dz + 0.24);
+    const floorTomTop = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.54, 14), drumHead);
+    floorTomTop.position.copy(floorTom.position);
+    this.staticRoot.add(snareStand, snareShell, snareTop, floorTom, floorTomTop);
+
+    // 4. 左右金色銅鈸 (Crash & Ride Cymbals) 與腳踏鈸 (Hi-Hat)
+    [
+      { cx: -0.88, cy: 2.28, cz: -0.15, r: 0.44, rx: 0.28, rz: 0.22 },
+      { cx: 0.86, cy: 2.18, cz: -0.12, r: 0.48, rx: 0.25, rz: -0.22 },
+      { cx: -0.96, cy: 1.72, cz: 0.32, r: 0.32, rx: 0.08, rz: 0.08 }
+    ].forEach((c) => {
+      const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, c.cy - 0.72, 8), drumStand);
+      stand.position.set(dx + c.cx, 0.72 + (c.cy - 0.72) * 0.5, dz + c.cz);
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(c.r, c.r + 0.02, 0.035, 16), cymbalMat);
+      disc.position.set(dx + c.cx, c.cy, dz + c.cz);
+      disc.rotation.set(c.rx, 0, c.rz);
+      this.staticRoot.add(stand, disc);
+    });
 
     // 草地聽眾彩色懶骨頭座席
     const seatColors = ['#e26345', '#5aa4d6', '#95cd4f', '#f5c73b'];
@@ -1055,38 +1290,27 @@ class BwyIsland3DEngine {
    * Zone 08: 生命領航摩天輪與成長車站 (動態旋轉 8 色摩天輪 + 營隊火車站 + All Pass 糖得來速亭)
    */
   buildGrowthWheelZone(x, z) {
-    // 摩天輪 A 字支撐架 (靜態烘焙)
-    [-0.9, 0.9].forEach((side) => {
-      const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 5.2, 8), this.mat('#f8f0d8'));
-      leg1.position.set(x - 1.1, 2.6, z - 0.6 + side);
-      leg1.rotation.z = -0.22;
-      const leg2 = leg1.clone();
-      leg2.position.x = x + 1.1;
-      leg2.rotation.z = 0.22;
-      this.staticRoot.add(leg1, leg2);
-    });
-
-    // 動態旋轉摩天輪輪盤與 8 座彩色車廂
-    const wheelGroup = new THREE.Group();
-    wheelGroup.position.set(x, 4.8, z - 0.6);
-
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(3.1, 0.14, 10, 28), this.mat('#f59e0b'));
-    wheelGroup.add(rim);
-
-    const cabinColors = ['#e26345', '#f5c73b', '#5aa4d6', '#95cd4f', '#8b73b4', '#e87a90', '#3b9ab2', '#f59e0b'];
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2;
-      const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 6.2, 6), this.mat('#f8f0d8'));
-      spoke.rotation.z = a;
-      wheelGroup.add(spoke);
-
-      const gondola = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), this.mat(cabinColors[i]));
-      gondola.position.set(Math.cos(a) * 3.1, Math.sin(a) * 3.1, 0);
-      wheelGroup.add(gondola);
+    if (this.carnival) {
+      // 使用夜間嘉年華升級版：雙層鋼構桁架、12 座恆垂直平衡吊艙與 72 顆跑馬燈泡
+      this.carnival.buildUpgradedFerrisWheel(x, z);
+    } else {
+      // 備援簡易摩天輪
+      [-0.9, 0.9].forEach((side) => {
+        const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 5.2, 8), this.mat('#f8f0d8'));
+        leg1.position.set(x - 1.1, 2.6, z - 0.6 + side);
+        leg1.rotation.z = -0.22;
+        const leg2 = leg1.clone();
+        leg2.position.x = x + 1.1;
+        leg2.rotation.z = 0.22;
+        this.staticRoot.add(leg1, leg2);
+      });
+      const wheelGroup = new THREE.Group();
+      wheelGroup.position.set(x, 4.8, z - 0.6);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(3.1, 0.14, 10, 28), this.mat('#f59e0b'));
+      wheelGroup.add(rim);
+      this.dynamicRoot.add(wheelGroup);
+      this.animated.ferrisWheel = wheelGroup;
     }
-
-    this.dynamicRoot.add(wheelGroup);
-    this.animated.ferrisWheel = wheelGroup;
 
     // 旁邊的「期中 All Pass 糖關懷得來速亭」與金色歐趴糖能量禮袋（彩蛋 #12 本體）
     const booth = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.7, 1.5), this.mat('#3b82f6'));
@@ -1231,29 +1455,23 @@ class BwyIsland3DEngine {
       this.staticRoot.add(lamp);
     });
 
-    // 地面吉祥物：身穿清大紫連帽衫的熊貓「清華胖達」
-    const px = x + 1.95;
-    const pz = z + 1.45;
-    const pandaHoodie = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.42, 0.65, 12), this.mat('#7c3aed'));
-    pandaHoodie.position.set(px, 0.65, pz);
-    const pandaHead = new THREE.Mesh(new THREE.SphereGeometry(0.36, 12, 10), this.mat('#ffffff'));
-    pandaHead.position.set(px, 1.18, pz);
-    const earL = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), this.mat('#1e293b'));
-    earL.position.set(px - 0.25, 1.46, pz);
-    const earR = earL.clone();
-    earR.position.x = px + 0.25;
-    this.staticRoot.add(pandaHoodie, pandaHead, earL, earR);
+    // 地面吉祥物：身穿清大紫連帽衫（胸前白色 NTHU 立體刺繡、坐姿外八黑腿、正八字黑眼圈）的熊貓「清華胖達」
+    this.buildDetailedNthuPanda(x + 1.88, 0.47, z + 1.38, -0.32, 0.82);
 
-    // 4 朵通往空中的白色「落腳小雲朵」階梯
+    // 4 朵通往空中的幾何切面低多邊形（Faceted Low-Poly）「落腳小雲朵」階梯
     const cloudSteps = [
       { dx: -1.4, dy: 1.4, dz: -0.6, s: 0.45 },
       { dx: 1.35, dy: 2.0, dz: -0.8, s: 0.52 },
       { dx: -0.85, dy: 2.65, dz: 0.7, s: 0.48 },
       { dx: 1.1, dy: 3.1, dz: 0.6, s: 0.42 }
     ];
-    cloudSteps.forEach((cs) => {
-      const c1 = new THREE.Mesh(new THREE.SphereGeometry(cs.s, 10, 8), this.mat('#ffffff'));
-      c1.scale.set(1.3, 0.72, 1.0);
+    cloudSteps.forEach((cs, idx) => {
+      const c1 = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(cs.s, 1),
+        this.mat('#f8fafc', { flatShading: true, roughness: 0.72 })
+      );
+      c1.scale.set(1.32, 0.72, 1.02);
+      c1.rotation.y = idx * 0.6;
       c1.position.set(x + cs.dx, cs.dy, z + cs.dz);
       this.staticRoot.add(c1);
     });
@@ -1262,18 +1480,24 @@ class BwyIsland3DEngine {
     const skyGroup = new THREE.Group();
     skyGroup.position.set(x, 3.85, z - 0.2);
 
-    // 倒錐形天空之城岩石底座 + 翠綠草坪頂蓋
-    const rockCone = new THREE.Mesh(new THREE.ConeGeometry(2.55, 2.2, 14), this.mat('#a67c52'));
+    // 倒錐形天空之城岩石底座 + 鼠尾草綠草坪頂蓋（解法 B：幾何切面質感）
+    const rockCone = new THREE.Mesh(
+      new THREE.ConeGeometry(2.55, 2.2, 11),
+      this.mat('#9e744d', { flatShading: true, roughness: 0.82 })
+    );
     rockCone.rotation.x = Math.PI;
     rockCone.position.y = -0.85;
-    const grassTop = new THREE.Mesh(new THREE.CylinderGeometry(2.65, 2.55, 0.36, 18), this.mat('#74b843'));
+    const grassTop = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.65, 2.55, 0.36, 16),
+      this.mat('#68a34d', { flatShading: true, roughness: 0.78 })
+    );
     grassTop.position.y = 0.15;
     skyGroup.add(rockCone, grassTop);
 
-    // 公共藝術「清鏡門」（1/3 比例北京清華二校門 + 外嵌大石框與四格青綠鏡面玻璃牆）
+    // 公共藝術「清鏡門」（1/3 比例北京清華二校門 + 外嵌大石框與四格青綠鏡面玻璃牆，往前挪與後方花椰菜氣球錯開）
     const mirrorGateGroup = new THREE.Group();
-    mirrorGateGroup.position.set(0.18, 0.32, -0.15);
-    mirrorGateGroup.rotation.y = 0.46; // 微幅朝向右前方 Z10 主視角
+    mirrorGateGroup.position.set(0.35, 0.32, 0.58);
+    mirrorGateGroup.rotation.y = 0.08; // 朝向正前方 Z10 主視角
 
     // 2A. 外圍厚實灰石框與青綠玻璃鏡牆
     const stoneFrameMat = this.mat('#84888e', { roughness: 0.8 });
@@ -1395,13 +1619,19 @@ class BwyIsland3DEngine {
     // 公共藝術「清鏡門」即為彩蛋 #08 本體，跟隨天空之城浮島上下飄浮並支援點擊觸發
     this.registerTreasureHitbox('egg-08', [3.2, 2.5, 1.3], new THREE.Vector3(0, 1.15, 0), mirrorGateGroup, true);
 
-    // 浮島左後方的「青花菜蔬食熱氣球」
-    const brocX = -1.35;
-    const brocY = 2.45;
-    const brocZ = 0.55;
-    const brocCrown = new THREE.Mesh(new THREE.SphereGeometry(0.68, 12, 10), this.mat('#4d9e45'));
+    // 浮島左後方的「青花菜蔬食熱氣球」（往後挪並微抬高，與前方清鏡門完全錯開不重疊；解法 B：切面低多邊形花冠）
+    const brocX = -1.45;
+    const brocY = 2.85;
+    const brocZ = -1.15;
+    const brocCrown = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.68, 1),
+      this.mat('#4d8c40', { flatShading: true, roughness: 0.78 })
+    );
     brocCrown.position.set(brocX, brocY, brocZ);
-    const brocPuff1 = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), this.mat('#68b645'));
+    const brocPuff1 = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.42, 1),
+      this.mat('#639e4c', { flatShading: true, roughness: 0.78 })
+    );
     brocPuff1.position.set(brocX - 0.34, brocY + 0.2, brocZ + 0.18);
     const brocPuff2 = brocPuff1.clone();
     brocPuff2.position.set(brocX + 0.36, brocY + 0.16, brocZ - 0.14);
@@ -1412,6 +1642,361 @@ class BwyIsland3DEngine {
     skyGroup.userData = { baseY: 3.85 };
     this.dynamicRoot.add(skyGroup);
     this.animated.miniSkyIsland = skyGroup;
+  }
+
+  /**
+   * 建構清大吉祥物熊貓「清華胖達」精緻坐姿模型（NTHU 清華紫連帽衫、胸前立體白字刺繡、外八黑腿、正八字黑眼圈）
+   */
+  buildDetailedNthuPanda(px, py, pz, rotY = -0.32, scale = 0.82) {
+    const raw = new THREE.Group();
+    raw.position.set(px, py, pz);
+    raw.rotation.y = rotY;
+    raw.scale.setScalar(scale);
+
+    const matWhiteFur = this.mat('#f6f5f0', { roughness: 0.9, metalness: 0.01 });
+    const matBlackFur = this.mat('#1c1d21', { roughness: 0.88, metalness: 0.02 });
+    const matHoodie = this.mat('#5f50a3', { roughness: 0.85, metalness: 0.01 });
+    const matHoodieRib = this.mat('#554696', { roughness: 0.88, metalness: 0.01 });
+    const matLetter = this.mat('#fcfcfa', { roughness: 0.62, metalness: 0.02 });
+    const matIris = this.mat('#753d18', { roughness: 0.28, metalness: 0.04 });
+    const matPupil = this.mat('#0d0e11', { roughness: 0.12, metalness: 0.06 });
+    const matHighlight = this.mat('#ffffff', { roughness: 0.1, emissive: '#ffffff', emissiveIntensity: 0.28 });
+
+    // 1. 坐姿白色絨毛下腹臀部底座 + 背後圓滾滾白色小尾巴
+    raw.add(makePandaEllipsoid(1.0, [0.335, 0.195, 0.305], [0, 0.195, -0.01], matWhiteFur, 24));
+    raw.add(makePandaEllipsoid(0.072, [1.0, 0.95, 1.05], [0, 0.155, -0.305], matWhiteFur, 14));
+
+    // 2. 坐姿向前外八字伸出的黑色圓胖雙腿與厚實微翹大腳掌
+    [-1, 1].forEach((s) => {
+      const legNodes = [
+        { p: [s * 0.145, 0.135, 0.06], r: 0.116 },
+        { p: [s * 0.205, 0.108, 0.21], r: 0.112 },
+        { p: [s * 0.255, 0.102, 0.345], r: 0.106 }
+      ];
+      raw.add(makePandaVariableTube(legNodes, matBlackFur, 18, 14));
+      raw.add(
+        makePandaEllipsoid(
+          0.142,
+          [0.9, 1.16, 0.72],
+          [s * 0.278, 0.142, 0.415],
+          matBlackFur,
+          18,
+          [-0.24, s * 0.4, -s * 0.08]
+        )
+      );
+    });
+
+    // 3. 清華紫連帽衫主軀幹（LatheGeometry 一體成形 + 下擺羅紋束口）
+    const hoodieProfile = [
+      new THREE.Vector2(0.001, 0.175),
+      new THREE.Vector2(0.315, 0.182),
+      new THREE.Vector2(0.356, 0.208),
+      new THREE.Vector2(0.345, 0.238),
+      new THREE.Vector2(0.364, 0.315),
+      new THREE.Vector2(0.354, 0.415),
+      new THREE.Vector2(0.322, 0.515),
+      new THREE.Vector2(0.262, 0.595),
+      new THREE.Vector2(0.16, 0.64),
+      new THREE.Vector2(0.001, 0.65)
+    ];
+    const hoodiePts = new THREE.SplineCurve(hoodieProfile).getPoints(32);
+    const hScaleX = 1.07;
+    const hScaleZ = 0.94;
+    const hoodieMesh = new THREE.Mesh(new THREE.LatheGeometry(hoodiePts, 28), matHoodie);
+    hoodieMesh.scale.set(hScaleX, 1.0, hScaleZ);
+    raw.add(hoodieMesh);
+
+    const hoodieRadiusAtY = (y) => {
+      let best = hoodiePts[0].x;
+      let minDiff = Infinity;
+      for (const p of hoodiePts) {
+        const d = Math.abs(p.y - y);
+        if (d < minDiff) {
+          minDiff = d;
+          best = p.x;
+        }
+      }
+      return best;
+    };
+
+    const hoodieFrontZ = (x, y) => {
+      const r = hoodieRadiusAtY(y);
+      const rx = r * hScaleX;
+      const rz = r * hScaleZ;
+      const t = 1 - (x / rx) ** 2;
+      return t > 0 ? rz * Math.sqrt(t) : 0;
+    };
+
+    const hemNodes = [];
+    for (let i = 0; i < 20; i++) {
+      const ang = (i / 20) * Math.PI * 2;
+      const r = 0.35;
+      hemNodes.push({
+        p: [Math.cos(ang) * r * hScaleX, 0.205, Math.sin(ang) * r * hScaleZ],
+        r: 0.022
+      });
+    }
+    raw.add(makePandaVariableTube(hemNodes, matHoodieRib, 28, 10, true));
+
+    // 4. 厚實連帽堆疊領圈與背後連帽帽兜
+    const collarNodes = [
+      { p: [0.0, 0.578, 0.268], r: 0.068 },
+      { p: [0.19, 0.592, 0.195], r: 0.072 },
+      { p: [0.29, 0.615, 0.015], r: 0.076 },
+      { p: [0.21, 0.64, -0.195], r: 0.08 },
+      { p: [0.0, 0.654, -0.262], r: 0.084 },
+      { p: [-0.21, 0.64, -0.195], r: 0.08 },
+      { p: [-0.29, 0.615, 0.015], r: 0.076 },
+      { p: [-0.19, 0.592, 0.195], r: 0.072 }
+    ];
+    raw.add(makePandaVariableTube(collarNodes, matHoodie, 30, 14, true));
+
+    const hoodCurveNodes = [
+      { p: [-0.18, 0.615, -0.225], r: 0.072 },
+      { p: [-0.13, 0.51, -0.295], r: 0.098 },
+      { p: [0.0, 0.455, -0.32], r: 0.118 },
+      { p: [0.13, 0.51, -0.295], r: 0.098 },
+      { p: [0.18, 0.615, -0.225], r: 0.072 }
+    ];
+    raw.add(makePandaVariableTube(hoodCurveNodes, matHoodie, 20, 12));
+    raw.add(makePandaEllipsoid(1.0, [0.205, 0.135, 0.095], [0, 0.545, -0.268], matHoodie, 18, [0.25, 0, 0]));
+
+    // 5. 左右微張迎賓的紫色衣袖 + 羅紋折邊袖口 + 黑色絨毛小圓手
+    [-1, 1].forEach((s) => {
+      const sleeveNodes = [
+        { p: [s * 0.215, 0.525, 0.015], r: 0.102 },
+        { p: [s * 0.352, 0.495, 0.048], r: 0.11 },
+        { p: [s * 0.462, 0.436, 0.092], r: 0.102 },
+        { p: [s * 0.542, 0.382, 0.132], r: 0.09 }
+      ];
+      raw.add(makePandaVariableTube(sleeveNodes, matHoodie, 18, 14));
+
+      const sCurve = new THREE.CatmullRomCurve3(
+        sleeveNodes.map((n) => new THREE.Vector3(...n.p)),
+        false,
+        'catmullrom',
+        0.45
+      );
+      const cuffCenter = sCurve.getPointAt(0.97);
+      const sleeveDir = sCurve.getTangentAt(1.0).normalize();
+      const refUp = new THREE.Vector3(0, 1, 0);
+      const uAxis = new THREE.Vector3().crossVectors(refUp, sleeveDir).normalize();
+      const vAxis = new THREE.Vector3().crossVectors(sleeveDir, uAxis).normalize();
+
+      const cuffRingNodes = [];
+      for (let k = 0; k < 14; k++) {
+        const a = (k / 14) * Math.PI * 2;
+        const rad = 0.076;
+        const pt = cuffCenter
+          .clone()
+          .addScaledVector(uAxis, Math.cos(a) * rad)
+          .addScaledVector(vAxis, Math.sin(a) * rad);
+        cuffRingNodes.push({ p: [pt.x, pt.y, pt.z], r: 0.023 });
+      }
+      raw.add(makePandaVariableTube(cuffRingNodes, matHoodieRib, 20, 10, true));
+
+      const pawPos = sCurve.getPointAt(1.0).addScaledVector(sleeveDir, 0.048);
+      const pawMesh = new THREE.Mesh(new THREE.SphereGeometry(0.082, 16, 14), matBlackFur);
+      pawMesh.position.copy(pawPos);
+      pawMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), sleeveDir);
+      pawMesh.scale.set(0.95, 1.08, 0.92);
+      raw.add(pawMesh);
+    });
+
+    // 6. 胸前立體白色「NTHU」刺繡字樣
+    const addEmbroideryStroke = (pts2D, strokeR = 0.0125) => {
+      const subPts = [];
+      const stepsPerSeg = 4;
+      for (let i = 0; i < pts2D.length - 1; i++) {
+        const [x0, y0] = pts2D[i];
+        const [x1, y1] = pts2D[i + 1];
+        const count = i === pts2D.length - 2 ? stepsPerSeg : stepsPerSeg - 1;
+        for (let k = 0; k <= count; k++) {
+          const f = k / stepsPerSeg;
+          const x = x0 + (x1 - x0) * f;
+          const y = y0 + (y1 - y0) * f;
+          const yCurved = y + x * x * 0.07;
+          const z = hoodieFrontZ(x, yCurved) + strokeR * 0.55;
+          subPts.push({ p: [x, yCurved, z], r: strokeR });
+        }
+      }
+      raw.add(makePandaVariableTube(subPts, matLetter, Math.max(8, subPts.length * 2), 8));
+    };
+
+    const yTop = 0.444;
+    const yBot = 0.348;
+    const yMid = (yTop + yBot) * 0.5;
+    addEmbroideryStroke([[-0.168, yBot], [-0.168, yTop]]);
+    addEmbroideryStroke([[-0.168, yTop], [-0.104, yBot]]);
+    addEmbroideryStroke([[-0.104, yBot], [-0.104, yTop]]);
+    addEmbroideryStroke([[-0.074, yTop], [-0.008, yTop]]);
+    addEmbroideryStroke([[-0.041, yTop], [-0.041, yBot]]);
+    addEmbroideryStroke([[0.016, yBot], [0.016, yTop]]);
+    addEmbroideryStroke([[0.08, yBot], [0.08, yTop]]);
+    addEmbroideryStroke([[0.016, yMid], [0.08, yMid]]);
+
+    const uPts = [[0.11, yTop], [0.11, yBot + 0.032]];
+    for (let k = 1; k <= 6; k++) {
+      const ang = Math.PI + (k / 7) * Math.PI;
+      uPts.push([0.142 + Math.cos(ang) * 0.032, yBot + 0.032 + Math.sin(ang) * 0.032]);
+    }
+    uPts.push([0.174, yBot + 0.032], [0.174, yTop]);
+    addEmbroideryStroke(uPts);
+
+    // 7. 飽滿大圓白絨毛頭 + 兩隻圓滾滾黑色大耳朵
+    const headCy = 0.878;
+    const headCz = 0.02;
+    const headRx = 0.394;
+    const headRy = 0.338;
+    const headRz = 0.348;
+    raw.add(makePandaEllipsoid(1.0, [headRx, headRy, headRz], [0, headCy, headCz], matWhiteFur, 28));
+
+    const headFrontZ = (x, y) => {
+      const t = 1 - (x / headRx) ** 2 - ((y - headCy) / headRy) ** 2;
+      return t > 0 ? headCz + headRz * Math.sqrt(t) : headCz;
+    };
+
+    const headNormal = (x, y, z) =>
+      new THREE.Vector3(
+        x / (headRx * headRx),
+        (y - headCy) / (headRy * headRy),
+        (z - headCz) / (headRz * headRz)
+      ).normalize();
+
+    [-1, 1].forEach((s) => {
+      raw.add(
+        makePandaEllipsoid(
+          0.14,
+          [1.04, 1.04, 0.84],
+          [s * 0.296, 1.156, -0.012],
+          matBlackFur,
+          20,
+          [0.06, -s * 0.14, -s * 0.45]
+        )
+      );
+    });
+
+    // 8. 球面曲率貼合「正八字 (/ \) 水滴黑眼圈」+ 琥珀棕邊黑眼珠 + 白高光
+    const makeConformingEyePatch = (side) => {
+      const cx = side * 0.158;
+      const cy = 0.876;
+      const tiltAngle = 0.5;
+      const upX = -side * Math.sin(tiltAngle);
+      const upY = Math.cos(tiltAngle);
+      const rightX = Math.cos(tiltAngle);
+      const rightY = side * Math.sin(tiltAngle);
+
+      const rings = 7;
+      const segs = 22;
+      const positions = [];
+      const indices = [];
+
+      const zCenterBase = headFrontZ(cx, cy);
+      const nCenter = headNormal(cx, cy, zCenterBase);
+      const liftMax = 0.014;
+      positions.push(
+        cx + nCenter.x * liftMax,
+        cy + nCenter.y * liftMax,
+        zCenterBase + nCenter.z * liftMax
+      );
+
+      for (let ir = 1; ir <= rings; ir++) {
+        const rho = ir / rings;
+        const lift = liftMax * Math.cos(rho * Math.PI * 0.5) - 0.003 * rho * rho;
+
+        for (let is = 0; is < segs; is++) {
+          const theta = (is / segs) * Math.PI * 2;
+          const rawU = Math.cos(theta);
+          const rawV = Math.sin(theta);
+          const widthFactor = 1.0 - 0.17 * rawV;
+          const u = rawU * 0.088 * widthFactor * rho;
+          const v = rawV * 0.122 * rho;
+
+          const pX = cx + u * rightX + v * upX;
+          const pY = cy + u * rightY + v * upY;
+          const pZBase = headFrontZ(pX, pY);
+          const nrm = headNormal(pX, pY, pZBase);
+
+          positions.push(pX + nrm.x * lift, pY + nrm.y * lift, pZBase + nrm.z * lift);
+        }
+      }
+
+      for (let is = 0; is < segs; is++) {
+        const next = (is + 1) % segs;
+        indices.push(0, 1 + is, 1 + next);
+      }
+
+      for (let ir = 1; ir < rings; ir++) {
+        const startCurr = 1 + (ir - 1) * segs;
+        const startNext = 1 + ir * segs;
+        for (let is = 0; is < segs; is++) {
+          const next = (is + 1) % segs;
+          const a = startCurr + is;
+          const b = startNext + is;
+          const c = startNext + next;
+          const d = startCurr + next;
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return new THREE.Mesh(geo, matBlackFur);
+    };
+
+    [-1, 1].forEach((s) => {
+      raw.add(makeConformingEyePatch(s));
+
+      const ex = s * 0.128;
+      const ey = 0.904;
+      const ez = headFrontZ(ex, ey);
+      const eNorm = headNormal(ex, ey, ez);
+
+      const irisPos = new THREE.Vector3(ex, ey, ez).addScaledVector(eNorm, 0.011);
+      raw.add(
+        makePandaEllipsoid(0.033, [1.0, 1.05, 0.65], [irisPos.x, irisPos.y, irisPos.z], matIris, 14, [-0.08, s * 0.32, 0])
+      );
+
+      const pupilPos = new THREE.Vector3(ex - s * 0.001, ey + 0.001, ez).addScaledVector(eNorm, 0.019);
+      raw.add(
+        makePandaEllipsoid(0.028, [1.0, 1.05, 0.68], [pupilPos.x, pupilPos.y, pupilPos.z], matPupil, 14, [-0.08, s * 0.32, 0])
+      );
+
+      const hiPos = pupilPos.clone().add(new THREE.Vector3(s * 0.005 + 0.007, 0.01, 0.016));
+      raw.add(makePandaEllipsoid(0.008, [1, 1, 0.8], [hiPos.x, hiPos.y, hiPos.z], matHighlight, 10));
+    });
+
+    // 9. 立體圓嘟嘟白絨毛吻部 + 亮黑鼻頭 + 垂直縫線小嘴
+    const muzCy = 0.79;
+    const muzCz = 0.305;
+    const muzRx = 0.146;
+    const muzRy = 0.112;
+    const muzRz = 0.112;
+    raw.add(makePandaEllipsoid(1.0, [muzRx, muzRy, muzRz], [0, muzCy, muzCz], matWhiteFur, 20));
+
+    const muzzleFrontZ = (x, y) => {
+      const t = 1 - (x / muzRx) ** 2 - ((y - muzCy) / muzRy) ** 2;
+      const zM = t > 0 ? muzCz + muzRz * Math.sqrt(t) : -1;
+      return Math.max(zM, headFrontZ(x, y));
+    };
+
+    const noseY = 0.822;
+    const noseZ = muzzleFrontZ(0, noseY) + 0.008;
+    raw.add(makePandaEllipsoid(0.03, [1.32, 0.86, 0.82], [0, noseY, noseZ], matPupil, 14, [0.16, 0, 0]));
+
+    const mouthNodes = [];
+    for (let i = 0; i <= 6; i++) {
+      const f = i / 6;
+      const my = 0.802 - f * 0.072;
+      const mz = muzzleFrontZ(0, my) + 0.003;
+      mouthNodes.push({ p: [0, my, mz], r: 0.0065 });
+    }
+    raw.add(makePandaVariableTube(mouthNodes, matBlackFur, 12, 8));
+
+    this.staticRoot.add(raw);
   }
 
   /**
@@ -1635,8 +2220,8 @@ class BwyIsland3DEngine {
   resetOverview() {
     this.animated.followTrain = false;
     this.flyToTarget({
-      cameraOffset: { x: 0, y: 26, z: 43 },
-      lookAtOffset: { x: 0, y: 2.5, z: 0 }
+      cameraOffset: { x: 0, y: 21.5, z: 47 },
+      lookAtOffset: { x: 0, y: 5.4, z: -1 }
     });
   }
 
@@ -1683,20 +2268,20 @@ class BwyIsland3DEngine {
         nightGlow: 1.6
       },
       night: {
-        bg: '#0d1b30',
-        fog: '#0d1b30',
-        deepSea: '#0b1729',
-        hemiSky: '#4a69bd',
-        hemiGround: '#1e272e',
-        hemiInt: 0.52,
-        sunColor: '#82ccdd',
-        sunInt: 0.48,
+        bg: '#081326',
+        fog: '#081326',
+        deepSea: '#09182e',
+        hemiSky: '#5878c8',
+        hemiGround: '#1a2335',
+        hemiInt: 0.62,
+        sunColor: '#93c5fd',
+        sunInt: 0.56,
         sunPos: [-20, 35, -18],
-        nightGlow: 2.6
+        nightGlow: 2.8
       }
     };
 
-    const p = presets[mode] || presets.day;
+    const p = presets[mode] || presets.night;
     this.scene.background.set(p.bg);
     this.scene.fog.color.set(p.fog);
     if (this.deepSeaMat && p.deepSea) {
@@ -1712,6 +2297,9 @@ class BwyIsland3DEngine {
     this.nightLights.forEach((l) => {
       l.intensity = p.nightGlow;
     });
+    if (this.carnival) {
+      this.carnival.setTimeOfDay(mode);
+    }
   }
 
   bindEvents() {
@@ -1803,7 +2391,7 @@ class BwyIsland3DEngine {
           mb.position.y = mb.userData.baseY + Math.sin(elapsed * 1.6 + mb.userData.phase) * 0.42;
         });
 
-        if (this.animated.ferrisWheel) {
+        if (!this.carnival && this.animated.ferrisWheel) {
           this.animated.ferrisWheel.rotation.z = elapsed * 0.32;
         }
 
@@ -1843,6 +2431,10 @@ class BwyIsland3DEngine {
             this.controls.target.lerp(new THREE.Vector3(tx, 1.4, tz), 0.12);
           }
         }
+      }
+
+      if (this.carnival) {
+        this.carnival.update(dt, elapsed, this.prefersReducedMotion);
       }
 
       this.controls.update();
